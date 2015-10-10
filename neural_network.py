@@ -1,6 +1,7 @@
 import random
 import theano
 import theano.tensor as T
+
 class init_weight:
     def __init__(self,prev_num,cur_num):
         self.prev_num = prev_num
