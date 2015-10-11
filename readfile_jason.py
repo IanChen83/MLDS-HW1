@@ -4,7 +4,9 @@ import numpy as np
 
 train_data = open('hw1/MLDS_HW1_RELEASE_v1/fbank/train.ark','r')
 label_data = open('hw1/MLDS_HW1_RELEASE_v1/label/train.lab','r')
-phone_data = open('hw1/MLDS_HW1_RELEASE_v1/phones/48_39.map','r')
+#phone_data = open('hw1/MLDS_HW1_RELEASE_v1/phones/48_39.map','r')
+
+ans_data = open('answer_map.txt','w')
 '''
 test = phone_data.readline()
 input_x = test.split()
@@ -13,7 +15,7 @@ print input_x
 train = T.matrix()
 label = T.matrix()
 ans   = T.matrix()
-phone = T.matrix()
+#phone = T.matrix()
 '''
 A=[]
 B=[1,2]
@@ -67,25 +69,32 @@ for line in phone_data:
 '''
 
 i=0
-find=0
+ini_find=0
 #for i in range(0,len(train)-1) :
 while i < len(train):
-	#if i==10000:
-	#	break 
-	if find==0:
+	if i%10000==0:
+		print i
+	if ini_find==0:
 		row = label_1.index(train[i][0])
 		name1_temp = name_1[row]
 		name2_temp = name_2[row]
-		find=1
+		ini_find=1
 	else:
-		if name_1[row]==name1_temp and name_2[row]==name2_temp:
+		ini_find = 1
+		if row >= len(label_1):
+			row = label_1.index(train[i][0])
+			name1_temp = name_1[row]
+			name2_temp = name_2[row]
+		elif name_1[row]==name1_temp and name_2[row]==name2_temp:
 			row = row
 		else:
-			find=0
 			row = label_1.index(train[i][0]) 
-	
+			name1_temp = name_1[row]
+			name2_temp = name_2[row]
+			
 	ans.append(label_2[row])
-	
+	ans_data.write(label_1[row]+','+label_2[row])
+
 	label_1.pop(row)
 	label_2.pop(row)
 	name_1.pop(row)
@@ -96,4 +105,8 @@ while i < len(train):
 	#row_phone = phone.index(label[row][1])
 	#ans.append(phone[row_phone][1])
 
-print ans[0]
+train_data.closed
+label_data.closed
+ans_data.closed
+
+
