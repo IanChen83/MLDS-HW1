@@ -1,5 +1,4 @@
 import theano
-
 import theano.tensor
 import numpy
 
@@ -10,10 +9,10 @@ print("-------- Start of Test 1 --------")
     Test 1: grad of a matrix
 '''
 test1_x = tensor.fmatrix()
-test1_x2 = tensor.fmatrix()
-test1_x_sum = test1_x.norm(1) + test1_x2.norm(1)
-test1_c = theano.function([test1_x, test1_x2], theano.grad(test1_x_sum, [test1_x, test1_x2]))
-print(test1_c([[1, 2], [3, 4]], [[5, 6], [7, 8]]))
+test1_x2 = theano.shared(numpy.matrix([[1, 2]]), borrow=True)
+test1_x_sum = theano.dot(test1_x2, test1_x).norm(1)
+test1_c = theano.function([test1_x], theano.grad(test1_x_sum, [test1_x2]))
+print(test1_c([[1, 2], [3, 4]]))
 print("--------- End of Test 1 ---------")
 
 print("-------- Start of Test 2 --------")
@@ -44,6 +43,7 @@ print("-------- Start of Test 3 --------")
     for elimination of b vector to simplify the computation.
 """
 X = [[1, 2, 3]]
+Y = [[1, 2, 3]]
 
 """
     * len(W_number_list)    = Number of hidden layer
@@ -59,5 +59,6 @@ input_dimension = len(X[0])  # Dimension of input vector
 output_dimension = 1  # Dimension of output vector
 batch_number = len(X)  # Number of batch size
 
-test = ModelFactory(len(X[0]), 1, W_number_list, 1, 0.5)
+test = ModelFactory(len(X[0]), len(Y[0]), W_number_list, 1, 0.5)
+test.exec_one(X, Y)
 print("--------- End of Test 3 ---------")
