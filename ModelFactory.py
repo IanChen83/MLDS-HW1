@@ -14,6 +14,7 @@ class ModelFactory:
         self.y_evaluated = None
         self.cost = None
         self.update = None
+        self.y_evaluated_function = None
         self.x_input = tensor.fmatrix("X_input")
         self.y_input = tensor.fmatrix("Y_input")
         self.W_array = []
@@ -35,8 +36,8 @@ class ModelFactory:
         )
         temp = [self.input_dim] + self.layer_neuron_num_list + [self.output_dim]
         for i in range(len(temp) - 1):
-            wp = np.zeros((temp[i], temp[i + 1]), dtype='float32')
-            bp = np.zeros((1, temp[i + 1]), dtype='float32')
+            wp = np.random.uniform(-1, 1, (temp[i], temp[i + 1]))
+            bp = np.random.uniform(-1, 1, (1, temp[i + 1]))
 
             # TODO: W and b are set to zeros
             self.W_array.append(shared(wp, name="W%d" % i, borrow=True))
@@ -51,14 +52,14 @@ class ModelFactory:
     def _define_update_function(self):
         self.cost = ModelFactory._cost_function(self.y_evaluated, self.y_input)
         g = grad(self.cost, self.W_array + self.B_array)
-
         update_pairs = []
         j = len(self.W_array)
         for i in range(len(self.B_array)):
             update_pairs.append((self.W_array[i], self.W_array[i] - self.learning_rate * g[i]))
             update_pairs.append((self.B_array[i], self.B_array[i] - self.learning_rate * g[i + j]))
 
-        self.update = function([self.x_input, self.y_input], g, updates=update_pairs)
+        self.update = function([self.x_input, self.y_input], g, updates=update_pairs,
+                               allow_input_downcast=True)
 
     @staticmethod
     def _act_function(x):

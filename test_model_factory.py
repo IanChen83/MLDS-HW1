@@ -42,8 +42,8 @@ print("-------- Start of Test 3 --------")
         dim(input) + 1
     for elimination of b vector to simplify the computation.
 """
-X = [[1, 2, 3]]
-Y = [[1, 2, 3]]
+X = [[1.1, 1.1, 1.1]]
+Y = [[1.1, 1.1, 1.1]]
 
 """
     * len(W_number_list)    = Number of hidden layer
@@ -60,5 +60,11 @@ output_dimension = 1  # Dimension of output vector
 batch_number = len(X)  # Number of batch size
 
 test = ModelFactory(len(X[0]), len(Y[0]), W_number_list, 1, 0.5)
-print test.train_one(X, Y)
+print test.W_array[0].get_value()
+print test.B_array[0].get_value()
+
+for i in range(10):
+    print "test %s" % i
+    print test.train_one(X, Y)
+    # print test.y_evaluated
 print("--------- End of Test 3 ---------")
