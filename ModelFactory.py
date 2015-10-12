@@ -1,4 +1,5 @@
 import theano.tensor as tensor
+from theano import shared, function, grad
 import numpy as np
 __author__ = 'patrickchen'
 
@@ -11,16 +12,31 @@ class ModelFactory:
         self.layer_neuron_num_list = _layer_neuron_num_list
         self.batch_num = _num_batch
         self.learning_rate = _lr
-        self.result = 0
+        self.y_evaluated = None
+        self.cost = None
+        self.update = None
+        self.x_input = tensor.fmatrix()
+        self.y_input = tensor.fmatrix()
         self.W_array = []
+
         # Deal with class initialization
         self._load_w_array()
+        self.create_model()
+        self.define_update_function()
 
-    def create_model(self, x):
-        result = x
-        for i in range(self.layer_num):
-            result = ModelFactory._layer_propagate(result, self.W_array[i], self.b_array[i])
-        self.result = result
+    def create_model(self):
+        result = self.x_input
+        for i in range(len(self.layer_neuron_num_list)):
+            result = ModelFactory._layer_propagate(result, self.W_array[i])
+        self.y_evaluated = result
+
+    def define_update_function(self):
+        self.cost = ModelFactory._cost_function(self.y_evaluated, self.y_input)
+        g = grad(self.cost, self.W_array)
+        update_pairs = []
+        for i in range(len(self.W_array)):
+            update_pairs.append((self.W_array[i], self.W_array[i] - self.learning_rate * g[i]))
+        self.update = function([self.x_input, self.y_input], g, updates=update_pairs)
 
     @staticmethod
     def _create_matrix_list(row, col):
@@ -37,7 +53,7 @@ class ModelFactory:
 
     @staticmethod
     def _layer_propagate(layer_input, w):
-        return tensor.dot(layer_input, w)
+        return ModelFactory._act_function(tensor.dot(layer_input, w))
 
     @staticmethod
     def _cost_function(func, out):
@@ -46,7 +62,6 @@ class ModelFactory:
     '''
         (Internal) Use layer_neuron_num_list to initialize W_array
     '''
-
     def _load_w_array(self):
         print "Load W array:\n\t%s\n\t(total %s hidden layers)" % (
             self.layer_neuron_num_list,
@@ -55,5 +70,9 @@ class ModelFactory:
         temp = [self.input_dim] + self.layer_neuron_num_list + [self.output_dim]
         for i in range(1, len(temp) - 1):
             # TODO: W are set to zeros
-            self.W_array.append(np.zeros((temp[i] + 1, temp[i + 1] + 1)))
+            self.W_array.append(
+                shared(
+                    np.zeros((temp[i] + 1, temp[i + 1] + 1), dtype='float32'),
+                    borrow=None)
+            )
         pass
