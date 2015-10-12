@@ -1,28 +1,20 @@
 import theano.tensor as tensor
-
+import numpy as np
 __author__ = 'patrickchen'
 
 
 class ModelFactory:
-    def __init__(self, _i_dim=64, _o_dim=49, _num_neuron=128, _num_layer=1, _num_batch=1, _lr=0.5):
+    def __init__(self, _i_dim, _o_dim, _layer_neuron_num_list=None, _num_batch=1, _lr=0.5):
         # Deal with input parameter
         self.input_dim = _i_dim
         self.output_dim = _o_dim
-        self.num_neuron = _num_neuron
-        self.layer_num = _num_layer
+        self.layer_neuron_num_list = _layer_neuron_num_list
         self.batch_num = _num_batch
         self.learning_rate = _lr
         self.result = 0
-
-        # Deal with class initialization
-        #   W_array array
         self.W_array = []
-        for _ in range(self.layer_num):
-            self.W_array.append(tensor.fmatrix())
-        # b_array array
-        self.b_array = []
-        for _ in range(self.layer_num):
-            self.b_array.append(tensor.fvector())  # TODO: Use random number generator to get initial value
+        # Deal with class initialization
+        self._load_w_array()
 
     def create_model(self, x):
         result = x
@@ -44,11 +36,24 @@ class ModelFactory:
         return (1 + tensor.tanh(x / 2)) / 2
 
     @staticmethod
-    def _layer_propagate(layer_input, w, b):
-        _1 = tensor.dot(layer_input, w)
-        _2 = _1 + b
-        return ModelFactory._act_function(_2)
+    def _layer_propagate(layer_input, w):
+        return tensor.dot(layer_input, w)
 
     @staticmethod
     def _cost_function(func, out):
         return (func - out).norm(1)
+
+    '''
+        (Internal) Use layer_neuron_num_list to initialize W_array
+    '''
+
+    def _load_w_array(self):
+        print "Load W array:\n\t%s\n\t(total %s hidden layers)" % (
+            self.layer_neuron_num_list,
+            len(self.layer_neuron_num_list)
+        )
+        temp = [self.input_dim] + self.layer_neuron_num_list + [self.output_dim]
+        for i in range(1, len(temp) - 1):
+            # TODO: W are set to zeros
+            self.W_array.append(np.zeros((temp[i] + 1, temp[i + 1] + 1)))
+        pass
