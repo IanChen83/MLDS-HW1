@@ -60,5 +60,5 @@ output_dimension = 1  # Dimension of output vector
 batch_number = len(X)  # Number of batch size
 
 test = ModelFactory(len(X[0]), len(Y[0]), W_number_list, 1, 0.5)
-test.exec_one(X, Y)
+print test.train_one(X, Y)
 print("--------- End of Test 3 ---------")
