@@ -42,8 +42,8 @@ print("-------- Start of Test 3 --------")
         dim(input) + 1
     for elimination of b vector to simplify the computation.
 """
-X = [[1.1, 1.1, 1.1]]
-Y = [[1.1, 1.1, 1.1]]
+X = [[1.1, 0, 1.1]]
+Y = [[0, 1.1, 0.5]]
 
 """
     * len(W_number_list)    = Number of hidden layer
@@ -52,19 +52,19 @@ Y = [[1.1, 1.1, 1.1]]
     Notice that the dimension of the real W matrix is
         ( dim(output)+1, dim(input)+1 )
 """
-W_number_list = [1]
+W_number_list = [128, 128]
 
-layer_number = 1  # Number of layers in this model
 input_dimension = len(X[0])  # Dimension of input vector
-output_dimension = 1  # Dimension of output vector
+output_dimension = len(Y[0])  # Dimension of output vector
 batch_number = len(X)  # Number of batch size
 
-test = ModelFactory(len(X[0]), len(Y[0]), W_number_list, 1, 0.5)
+test = ModelFactory(input_dimension, output_dimension, W_number_list, batch_number, 0.5)
 print test.W_array[0].get_value()
 print test.B_array[0].get_value()
 
-for i in range(10):
+for i in range(10000):
     print "test %s" % i
-    print test.train_one(X, Y)
+    test.train_one(X, Y)
     # print test.y_evaluated
+print test.y_evaluated_function(X, Y)
 print("--------- End of Test 3 ---------")

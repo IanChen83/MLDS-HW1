@@ -48,6 +48,7 @@ class ModelFactory:
         for i in range(len(self.W_array)):
             result = ModelFactory._layer_propagate(result, self.W_array[i], self.B_array[i])
         self.y_evaluated = result
+        # self.y_evaluated_function = function([self.x_input, self.y_input], )
 
     def _define_update_function(self):
         self.cost = ModelFactory._cost_function(self.y_evaluated, self.y_input)
@@ -58,8 +59,11 @@ class ModelFactory:
             update_pairs.append((self.W_array[i], self.W_array[i] - self.learning_rate * g[i]))
             update_pairs.append((self.B_array[i], self.B_array[i] - self.learning_rate * g[i + j]))
 
+        self.y_evaluated_function = function([self.x_input, self.y_input], self.y_evaluated,
+                                             allow_input_downcast=True, on_unused_input='ignore')
         self.update = function([self.x_input, self.y_input], g, updates=update_pairs,
                                allow_input_downcast=True)
+        # print dir(self.y_evaluated)
 
     @staticmethod
     def _act_function(x):
@@ -74,10 +78,10 @@ class ModelFactory:
         return (func - out).norm(1)
 
     def train_one(self, x_input, y_input):
-        if len(x_input) != self.batch_num:
-            print "Error: Input batch size not equals to the number pre-defined."
-            exit(1)
-        if len(x_input[0]) != self.input_dim or len(y_input[0]) != self.output_dim:
-            print "Error: Input/Output dimension not equals to the number pre-defined."
-            exit(1)
+        # if len(x_input) != self.batch_num:
+        #     print "Error: Input batch size not equals to the number pre-defined."
+        #     exit(1)
+        # if len(x_input[0]) != self.input_dim or len(y_input[0]) != self.output_dim:
+        #     print "Error: Input/Output dimension not equals to the number pre-defined."
+        #     exit(1)
         return self.update(x_input, y_input)
