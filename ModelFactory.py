@@ -37,7 +37,7 @@ class ModelFactory:
         temp = [self.input_dim] + self.layer_neuron_num_list + [self.output_dim]
         for i in range(len(temp) - 1):
             wp = np.random.uniform(-1, 1, (temp[i], temp[i + 1]))
-            bp = np.random.uniform(-1, 1, (1, temp[i + 1]))
+            bp = np.random.uniform(-1, 1, (self.batch_num, temp[i + 1]))
 
             # TODO: W and b are set to zeros
             self.W_array.append(shared(wp, name="W%d" % i, borrow=True))
