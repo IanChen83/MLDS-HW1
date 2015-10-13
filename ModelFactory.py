@@ -19,6 +19,11 @@ class ModelFactory:
         self.y_input = tensor.fmatrix("Y_input")
         self.W_array = []
         self.B_array = []
+        self.vW_array = []
+        self.vB_array = []
+        self.random_mu = 0
+        self.random_sigma = 0.1
+        self.update_momentum = 0.9
 
         # Deal with class initialization
         self._load_w_array()
@@ -36,12 +41,16 @@ class ModelFactory:
         )
         temp = [self.input_dim] + self.layer_neuron_num_list + [self.output_dim]
         for i in range(len(temp) - 1):
-            wp = np.random.uniform(-1, 1, (temp[i], temp[i + 1]))
-            bp = np.random.uniform(-1, 1, (self.batch_num, temp[i + 1]))
+            wp = np.random.normal(self.random_mu, self.random_sigma, (temp[i], temp[i + 1]))
+            bp = np.random.normal(self.random_mu, self.random_sigma, (self.batch_num, temp[i + 1]))
+            vw = np.zeros((temp[i], temp[i + 1]))
+            vb = np.zeros((self.batch_num, temp[i + 1]))
 
             # TODO: W and b are set to zeros
             self.W_array.append(shared(wp, name="W%d" % i, borrow=True))
             self.B_array.append(shared(bp, name="B%d" % i, borrow=True))
+            self.vW_array.append(shared(vw, name="vW%d" % i, borrow=True))
+            self.vB_array.append(shared(vb, name="vB%d" % i, borrow=True))
 
     def _create_model(self):
         result = self.x_input
@@ -56,8 +65,12 @@ class ModelFactory:
         update_pairs = []
         j = len(self.W_array)
         for i in range(len(self.B_array)):
-            update_pairs.append((self.W_array[i], self.W_array[i] - self.learning_rate * g[i]))
-            update_pairs.append((self.B_array[i], self.B_array[i] - self.learning_rate * g[i + j]))
+            update_pairs.append((self.W_array[i], self.W_array[i] + self.vW_array[i]))
+            update_pairs.append((self.B_array[i], self.B_array[i] + self.vB_array[i]))
+            update_pairs.append((self.vB_array[i], self.update_momentum * self.vB_array[i] -
+                                 self.learning_rate * g[i + j] / self.batch_num))
+            update_pairs.append((self.vW_array[i], self.update_momentum * self.vW_array[i] -
+                                 self.learning_rate * g[i] / self.batch_num))
 
         self.y_evaluated_function = function([self.x_input, self.y_input], self.y_evaluated,
                                              allow_input_downcast=True, on_unused_input='ignore')
