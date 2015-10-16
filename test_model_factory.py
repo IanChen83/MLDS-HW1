@@ -208,7 +208,9 @@ def test4(verbose=False):
     output_dimension = len(y[0])  # Dimension of output vector
     batch_number = len(x)  # Number of batch size
 
-    test = ModelFactory(input_dimension, output_dimension, w_number_list, batch_number, 0.01)
+    test = ModelFactory(input_dimension, output_dimension, w_number_list, batch_number, 0.9)
+
+    my_print("Momentum", test.update_momentum, verbose)
 
     _1 = []
 
@@ -222,6 +224,9 @@ def test4(verbose=False):
         my_print("Velocity of W[%d] (Before)" % i, v1w[i], verbose)
         v1b.append(test.B_velocity[i].get_value())
         my_print("Velocity of B[%d] (Before)" % i, v1b[i], verbose)
+
+        my_print("Velocity of B[%d] * Momentum (Before)" % i, v1b[i] * test.update_momentum, verbose)
+        my_print("Velocity of B[%d] * Momentum (Before)" % i, v1b[i] * test.update_momentum, verbose)
 
     # update batch 0
     _1.append(test.grad_function[0](x, y))
@@ -242,11 +247,13 @@ def test4(verbose=False):
     for i in range(test.layer_num):
         my_assert("Batch 0 update velocity of W[%d]" % i,
                   v2w[i],
-                  v1w[i] - _1[0][i] * test.learning_rate / test.batch_num
+                  v1w[i] * test.update_momentum
+                  - _1[0][i] * test.learning_rate / test.batch_num
                   )
         my_assert("Batch 0 update velocity of B[%d]" % i,
                   v2b[i],
-                  v1b[i] - _1[0][i + test.layer_num] * test.learning_rate / test.batch_num
+                  v1b[i] * test.update_momentum
+                  - _1[0][i + test.layer_num] * test.learning_rate / test.batch_num
                   )
     print("--------- End of Test 4 ---------")
 
@@ -280,8 +287,13 @@ def test5(verbose=False):
 
     print("--------- End of Test 5 ---------")
 
+
+'''
+ Use verbose to enable printing
+ E.g. test1(True)
+'''
 test1()
 test2()
 test3()
-test4()
+test4(True)
 test5()

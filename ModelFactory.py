@@ -33,7 +33,7 @@ class ModelFactory:
 
         self.random_mu = 0
         self.random_sigma = 0.1
-        self.update_momentum = 0.0
+        self.update_momentum = 0.5
         self.updates = []
         self.update_velocity = []
         self.update_param_function = []
@@ -143,9 +143,6 @@ class ModelFactory:
     ####################### Update Model Creation #############################
     '''
 
-    def _update_velocity(self):
-        pass
-
     def _create_velocity_updater(self):
         for i in range(self.batch_num):
             self.grad.append([])
@@ -158,13 +155,14 @@ class ModelFactory:
             for j in range(self.layer_num):
                 self.updates[i].append((
                     self.W_velocity[j],
-                    self.W_velocity[j] - (self.learning_rate / self.batch_num) * self.grad[i][j]
+                    self.W_velocity[j] * self.update_momentum - (self.learning_rate / self.batch_num) * self.grad[i][j]
                 ))
 
             for j in range(self.layer_num):
                 self.updates[i].append((
                     self.B_velocity[j],
-                    self.B_velocity[j] - (self.learning_rate / self.batch_num) * self.grad[i][j + self.layer_num]
+                    self.B_velocity[j] * self.update_momentum -
+                    (self.learning_rate / self.batch_num) * self.grad[i][j + self.layer_num]
                 ))
 
             self.grad_function.append([])
@@ -199,13 +197,6 @@ class ModelFactory:
 
         for i in range(self.layer_num):
             self.update_param_function[i](0)
-
-            # print self.y_evaluated_function(x)
-            # for i in range(self.layer_num):
-            #     self.W[i].set_value(self.W[i].get_value() - self.W_update[i].get_value())
-            #     self.B[i].set_value(self.B[i].get_value() - np.tile(self.B_update[i].get_value(), (self.batch_num, 1)))
-            #
-            # self.reset_update()
 
     def train_one(self, x_input, y_input):
         if len(x_input) != self.batch_num:
