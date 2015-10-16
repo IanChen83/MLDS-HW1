@@ -14,8 +14,8 @@ class ModelFactory:
 
         self.W = []
         self.B = []
-        self.W_update = []
-        self.B_update = []
+        self.W_velocity = []
+        self.B_velocity = []
 
         # training parameter
         self.x_input = tensor.fmatrix("X_input")
@@ -27,21 +27,24 @@ class ModelFactory:
         self.y_evaluated = None
         self.y_evaluated_function = None
 
-        self.grad = None
-        self.grad_function = None
+        self.grad = []
+        self.grad_function = []
+        self.grad_function_no_update = []
 
         self.random_mu = 0
         self.random_sigma = 0.1
-        self.update_momentum = 0
+        self.update_momentum = 0.0
+        self.updates = []
+        self.update_velocity = []
+        self.update_param_function = []
 
         '''
             Initialize and start
         '''
         self._initialize()
         self._create_model()
-        self._update_pairs()
-        # self._define_velocity_function()
-
+        self._create_param_updater()
+        self._create_velocity_updater()
     '''
     ####################### Initialization ####################################
     '''
@@ -73,7 +76,7 @@ class ModelFactory:
             wp_update = np.zeros((temp[i], temp[i + 1]))
 
             self.W.append(shared(wp, name="W%d" % i, borrow=True))
-            self.W_update.append(shared(wp_update, name="W_update%d" % i, borrow=True))
+            self.W_velocity.append(shared(wp_update, name="W_update%d" % i, borrow=True))
 
     '''
         (Internal) Initialize B array with random number
@@ -87,13 +90,13 @@ class ModelFactory:
             bp_update = np.zeros((1, temp[i + 1]))
 
             self.B.append(
-                shared(np.tile(bp, (self.batch_num, 1)), name="B%d" % i, borrow=True)
+                shared(bp, name="B%d" % i, borrow=True, broadcastable=[True, False])
             )
-            self.B_update.append(
-                shared(bp_update, name="B_update%d" % i, borrow=True)
+            self.B_velocity.append(
+                shared(bp_update, name="B_update%d" % i, borrow=True, broadcastable=[True, False])
             )
-
     '''
+
     ####################### Model Creation ####################################
     '''
     '''
@@ -130,7 +133,7 @@ class ModelFactory:
 
     @staticmethod
     def _layer_propagate(layer_input, w, b):
-        return ModelFactory._act_function(tensor.dot(layer_input, w) + b)
+        return ModelFactory._act_function(tensor.dot(layer_input, w) + b.dimshuffle('x', 1))
 
     @staticmethod
     def _cost_function(func, out):
@@ -140,83 +143,51 @@ class ModelFactory:
     ####################### Update Model Creation #############################
     '''
 
-    def reset_update(self):
-        for i in self.B_update:
-            i.set_value(self.update_momentum * i.get_value())
-        for i in self.W_update:
-            i.set_value(self.update_momentum * i.get_value())
+    def _update_velocity(self):
+        pass
 
-    def _update_pairs(self):
-        update_pairs_param = []
-        update_pairs_Velocity = []
-        self.reset_update()
-        # self.grad[i] stands for the gradient of each input in a batch
-        _grad = []
-        _temp = ModelFactory._cost_function(self.y_evaluated, self.y_input)
-
-        self.grad = []
-        self.grad_function = []
+    def _create_velocity_updater(self):
         for i in range(self.batch_num):
-            self.grad.append(tensor.grad(_temp[i], self.W + self.B))
+            self.grad.append([])
+            self.grad[i] = tensor.grad(cost=ModelFactory._cost_function(self.y_evaluated, self.y_input)[i],
+                                       wrt=self.W + self.B
+                                       )
 
-        for i in range(self.batch_num):
-            update_pairs_param.append([])
+            # Define update pairs
+            self.updates.append([])
+            for j in range(self.layer_num):
+                self.updates[i].append((
+                    self.W_velocity[j],
+                    self.W_velocity[j] - (self.learning_rate / self.batch_num) * self.grad[i][j]
+                ))
 
             for j in range(self.layer_num):
-                update_pairs_param[i].append(
-                    (self.W_update[j],
-                     self.W_update[j] -
-                     self.learning_rate * self.grad[i][j] / self.batch_num
-                     )
-                )
+                self.updates[i].append((
+                    self.B_velocity[j],
+                    self.B_velocity[j] - (self.learning_rate / self.batch_num) * self.grad[i][j + self.layer_num]
+                ))
 
-                update_pairs_param[i].append(
-                    (self.B_update[j],
-                     self.B_update[j] -
-                     self.learning_rate * self.grad[i][j + self.layer_num][0] / self.batch_num
-                     )
-                )
+            self.grad_function.append([])
+            self.grad_function[i] = function([self.x_input, self.y_input],
+                                             self.grad[i],
+                                             allow_input_downcast=True,
+                                             updates=self.updates[i]
+                                             )
+            self.grad_function_no_update.append([])
+            self.grad_function_no_update[i] = function([self.x_input, self.y_input],
+                                                       self.grad[i],
+                                                       allow_input_downcast=True,
+                                                       )
 
-            self.grad_function.append(function([self.x_input, self.y_input],
-                                               self.grad[i],
-                                               allow_input_downcast=True,
-                                               name="grad",
-                                               updates=update_pairs_param[i]
-                                               )
-                                      )
-            #
-            # for i in range(self.layer_num):
-            #     update_pairs.append((self.W_array[i], self.W_array[i] - self.learning_rate * self.grad[i]))
-            #     update_pairs.append((self.B_array[i], self.B_array[i] - ))
-
-    #     self.cost = ModelFactory._cost_function(self.y_evaluated, self.y_input)
-    #     self.g = grad(self.cost, self.W_array + self.B_array)
-    #     update_pairs = []
-    #     j = len(self.W_array)
-    #     for i in range(len(self.B_array)):
-    #         # Velocity calculation
-    #         update_pairs.append((self.vB_array[i],
-    #                              self.update_momentum * self.vB_array[i] - self.learning_rate * self.g[i + j] /
-    #                              self.batch_num))
-    #         update_pairs.append((self.vW_array[i],
-    #                              self.update_momentum * self.vW_array[i] - self.learning_rate * self.g[i] /
-    #                              self.batch_num))
-    #
-    #     for i in range(len(self.B_array)):
-    #         # Parameter calculation
-    #         update_pairs.append((self.W_array[i], self.W_array[i] + self.vW_array[i]))
-    #         update_pairs.append((self.B_array[i], self.B_array[i] + self.vB_array[i]))
-    #
-    #     self.y_evaluated_function = function([self.x_input, self.y_input], self.y_evaluated,
-    #                                          allow_input_downcast=True, on_unused_input='ignore')
-    #     self.update = function([self.x_input, self.y_input], self.g, updates=update_pairs,
-    #                            allow_input_downcast=True)
-    #     # print dir(self.y_evaluated)
-    #     pass
-    #
-    # def _define_velocity_function(self):
-    #     pass
-    #
+    def _create_param_updater(self):
+        for i in range(self.layer_num):
+            x = tensor.iscalar()
+            updates_w = []
+            updates_b = []
+            updates_w.append((self.W[i], self.W[i] + self.W_velocity[i]))
+            updates_b.append((self.B[i], self.B[i] + self.B_velocity[i]))
+            _1 = function([x], outputs=x, updates=updates_b + updates_w)
+            self.update_param_function.append(_1)
 
     '''
     ####################### Training Functions ################################
@@ -227,8 +198,14 @@ class ModelFactory:
             self.grad_function[i](x, y)
 
         for i in range(self.layer_num):
-            self.W[i].set_value(self.W[i].get_value() + self.W_update[i].get_value())
-            self.B[i].set_value(self.B[i].get_value() + np.tile(self.B_update[i].get_value(), (self.batch_num, 1)))
+            self.update_param_function[i](0)
+
+            # print self.y_evaluated_function(x)
+            # for i in range(self.layer_num):
+            #     self.W[i].set_value(self.W[i].get_value() - self.W_update[i].get_value())
+            #     self.B[i].set_value(self.B[i].get_value() - np.tile(self.B_update[i].get_value(), (self.batch_num, 1)))
+            #
+            # self.reset_update()
 
     def train_one(self, x_input, y_input):
         if len(x_input) != self.batch_num:
