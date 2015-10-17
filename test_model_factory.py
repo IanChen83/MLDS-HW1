@@ -154,7 +154,7 @@ def test3(verbose=False):
 
     my_print("input x", x, verbose)
     my_print("input y", y, verbose)
-    w_number_list = [128]
+    w_number_list = [2]
 
     input_dimension = len(x[0])  # Dimension of input vector
     output_dimension = len(y[0])  # Dimension of output vector
@@ -162,15 +162,18 @@ def test3(verbose=False):
 
     test = ModelFactory(input_dimension, output_dimension, w_number_list, batch_number, 0.01)
 
-    my_print("W[0]", test.W[0].get_value(), verbose)
-    my_print("B[0]", test.B[0].get_value(), verbose)
+    print test.W_velocity[0].get_value()
+    print test.B_velocity[0].get_value()
 
     _1w = test.W[0].get_value()
     _1b = test.B[0].get_value()
     my_print("W[0] (Before)", _1w, verbose)
     my_print("B[0] (Before)", _1b, verbose)
 
-    test.grad_function[0](x, y)
+    _1 = []
+    for i in range(test.batch_num):
+        _1.append(test.grad_function[i](x, y))
+        my_print("Grad on Batch %s" % i, _1[i], verbose)
 
     for i in range(test.layer_num):
         test.update_param_function[i](0)
@@ -184,6 +187,14 @@ def test3(verbose=False):
     _3b = test.B_velocity[0].get_value()
     my_print("Velocity of W[0]", _3w, verbose)
     my_print("Velocity of B[0]", _3b, verbose)
+
+    for i in range(test.layer_num):
+        test.post_update_param_function[i](0)
+
+    _4w = test.W_velocity[0].get_value()
+    _4b = test.B_velocity[0].get_value()
+    my_print("Velocity of W[0]", _4w, verbose)
+    my_print("Velocity of B[0]", _4b, verbose)
 
     my_assert("Update W[0]", _2w, _1w + _3w)
     my_assert("Update B[0]", _2b, _1b + _3b)
@@ -202,7 +213,7 @@ def test4(verbose=False):
 
     my_print("input x", x, verbose)
     my_print("input y", y, verbose)
-    w_number_list = [3]
+    w_number_list = []
 
     input_dimension = len(x[0])  # Dimension of input vector
     output_dimension = len(y[0])  # Dimension of output vector
@@ -212,49 +223,16 @@ def test4(verbose=False):
 
     my_print("Momentum", test.update_momentum, verbose)
 
-    _1 = []
-
-    for _ in range(5):
-        test.train_one(x, y)
-
-    v1w = []
-    v1b = []
     for i in range(test.layer_num):
-        v1w.append(test.W_velocity[i].get_value())
-        my_print("Velocity of W[%d] (Before)" % i, v1w[i], verbose)
-        v1b.append(test.B_velocity[i].get_value())
-        my_print("Velocity of B[%d] (Before)" % i, v1b[i], verbose)
+        my_print("W[%d]" % i, test.W[i].get_value(), verbose)
+        my_print("B[%d]" % i, test.B[i].get_value(), verbose)
 
-        my_print("Velocity of B[%d] * Momentum (Before)" % i, v1b[i] * test.update_momentum, verbose)
-        my_print("Velocity of B[%d] * Momentum (Before)" % i, v1b[i] * test.update_momentum, verbose)
-
-    # update batch 0
-    _1.append(test.grad_function[0](x, y))
+    test.train_one(x, y)
 
     for i in range(test.layer_num):
-        my_print("Grad of W[%d] of batch 0" % i, _1[0][i], verbose)
-        my_print("Grad of B[%d] of batch 0" % i, _1[0][i + test.layer_num], verbose)
+        my_print("W[%d]" % i, test.W[i].get_value(), verbose)
+        my_print("B[%d]" % i, test.B[i].get_value(), verbose)
 
-    v2w = []
-    v2b = []
-
-    for i in range(test.layer_num):
-        v2w.append(test.W_velocity[i].get_value())
-        my_print("Velocity of W[%d] (After)" % i, v2w[i], verbose)
-        v2b.append(test.B_velocity[i].get_value())
-        my_print("Velocity of B[%d] (After)" % i, v2b[i], verbose)
-
-    for i in range(test.layer_num):
-        my_assert("Batch 0 update velocity of W[%d]" % i,
-                  v2w[i],
-                  v1w[i] * test.update_momentum
-                  - _1[0][i] * test.learning_rate / test.batch_num
-                  )
-        my_assert("Batch 0 update velocity of B[%d]" % i,
-                  v2b[i],
-                  v1b[i] * test.update_momentum
-                  - _1[0][i + test.layer_num] * test.learning_rate / test.batch_num
-                  )
     print("--------- End of Test 4 ---------")
 
 
@@ -297,6 +275,6 @@ def test5(verbose=False):
 '''
 # test1()
 # test2()
-# test3()
+test3(True)
 # test4(True)
-test5()
+# test5()
