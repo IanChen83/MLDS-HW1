@@ -37,6 +37,7 @@ class ModelFactory:
         self.updates = []
         self.update_velocity = []
         self.update_param_function = []
+        self.post_update_param_function = []
 
         '''
             Initialize and start
@@ -45,6 +46,7 @@ class ModelFactory:
         self._create_model()
         self._create_param_updater()
         self._create_velocity_updater()
+        self._create_post_velocity_updater()
     '''
     ####################### Initialization ####################################
     '''
@@ -155,13 +157,13 @@ class ModelFactory:
             for j in range(self.layer_num):
                 self.updates[i].append((
                     self.W_velocity[j],
-                    self.W_velocity[j] * self.update_momentum - (self.learning_rate / self.batch_num) * self.grad[i][j]
+                    self.W_velocity[j] - (self.learning_rate / self.batch_num) * self.grad[i][j]
                 ))
 
             for j in range(self.layer_num):
                 self.updates[i].append((
                     self.B_velocity[j],
-                    self.B_velocity[j] * self.update_momentum -
+                    self.B_velocity[j] -
                     (self.learning_rate / self.batch_num) * self.grad[i][j + self.layer_num]
                 ))
 
@@ -187,6 +189,15 @@ class ModelFactory:
             _1 = function([x], outputs=x, updates=updates_b + updates_w)
             self.update_param_function.append(_1)
 
+    def _create_post_velocity_updater(self):
+        for i in range(self.layer_num):
+            x = tensor.iscalar()
+            updates_w = []
+            updates_b = []
+            updates_w.append((self.W_velocity[i], self.W_velocity[i] * self.update_momentum))
+            updates_b.append((self.B_velocity[i], self.B_velocity[i] * self.update_momentum))
+            _1 = function([x], outputs=x, updates=updates_b + updates_w)
+            self.post_update_param_function.append(_1)
     '''
     ####################### Training Functions ################################
     '''
@@ -197,6 +208,9 @@ class ModelFactory:
 
         for i in range(self.layer_num):
             self.update_param_function[i](0)
+
+        for i in range(self.layer_num):
+            self.post_update_param_function[i](0)
 
     def train_one(self, x_input, y_input):
         if len(x_input) != self.batch_num:

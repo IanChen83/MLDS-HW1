@@ -264,8 +264,11 @@ def test5(verbose=False):
         Base on Test 1, 2, 3, 4
     """
     print("-------- Start of Test 5 --------")
-    x = [[1.2, 0.9], [1.4, 0.4]]
-    y = [[0.1, 0.5], [0.5, 0.2]]
+    # x = [[1.2, 0.9], [1.4, 0.4]]
+    # y = [[0.1, 0.5], [0.5, 0.2]]
+
+    x = [[1.2, 0.9]]
+    y = [[0.1, 0.5]]
 
     my_print("input x", x, verbose)
     my_print("input y", y, verbose)
@@ -292,8 +295,8 @@ def test5(verbose=False):
  Use verbose to enable printing
  E.g. test1(True)
 '''
-test1()
-test2()
-test3()
-test4(True)
+# test1()
+# test2()
+# test3()
+# test4(True)
 test5()
