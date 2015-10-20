@@ -1,8 +1,6 @@
 import cPickle
 import random
-from random import randrange, randint
 from sys import stdout
-from math import floor
 
 from ModelFactory import *
 from output48_39 import *
@@ -144,7 +142,7 @@ class TestBench:
             "\r" + BColors.OKBLUE + "Progress: %d/%d (%.2f %%)" % (cur, total, float(cur) / total * 100) +
             "\t" + "Current epoch: %d" % cur_epoch +
             "\t" + "Cost: %.2f" % cost +
-            "\t" + "ACC: %.2f" % acc
+            "\t" + "ACC: %.2f" % float(acc)
         )
         pass
 
@@ -175,6 +173,7 @@ class TestBench:
             self.model.train_one(train_batch_x, train_batch_y)
 
             i += self.batch_number
+            m += self.batch_number
             if m > self.train_segment:
                 cost = self.model.cost_function(train_batch_x, train_batch_y)
                 acc = self._test(self.train_segment)
@@ -395,20 +394,21 @@ class TestBench:
     def _test(self, training_segment):
         c = MAP()
         err = 0
+        y = [0] * self.output_dimension
         _1 = len(self.train_input_data) - training_segment
         for m in range(_1):
             # print self.train_input_data[training_segment + m][1:70]
-            ya = self.model.y_evaluated_function(
-                [self.train_input_data[training_segment + m][1:70]],
-                None
-            )[0]
-            if [c.map(ya)] != [str(self.train_answer_data[training_segment + m][1].split('\n')[0])]:
+            xa = self.get_one_data(m + training_segment)
+            t = self.model.y_evaluated_function([xa], [self.get_one_answer(m + training_segment)])
+
+            if c.map(t) != self.train_answer_data[m + training_segment][1].strip():
                 err += 1
             else:
-                pass
+                print 1
+
                 # print [c.map(Ya)]
                 # print [str(ans[m][1].split('\n')[0])]
-        return 1.0 - err / float(_1)
+        return 1.0 - float(err / float(_1))
 
     # def __run(self, batch):
     #     training_segment = 1000000
