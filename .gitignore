@@ -55,3 +55,8 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Train data
+*.ark
+answer_map.txt
+48_39.map

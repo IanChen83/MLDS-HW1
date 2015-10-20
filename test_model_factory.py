@@ -24,8 +24,11 @@ class BColors:
         pass
 
 
-def my_print(title, content, switch=True):
+def my_print(title, content=None, switch=True):
     if switch is False:
+        return
+    if content is None:
+        print BColors.OKGREEN + BColors.BOLD + BColors.UNDERLINE, "*", title, ":", BColors.ENDC
         return
     print BColors.OKGREEN + BColors.BOLD + BColors.UNDERLINE, "*", title, ":", BColors.ENDC, "\n", content
 
@@ -242,11 +245,11 @@ def test5(verbose=False):
         Base on Test 1, 2, 3, 4
     """
     print("-------- Start of Test 5 --------")
-    # x = [[1.2, 0.9], [1.4, 0.4]]
-    # y = [[0.1, 0.5], [0.5, 0.2]]
+    x = [[1.2, 0.9], [1.4, 0.4]]
+    y = [[0.1, 0.5], [0.5, 0.2]]
 
-    x = [[1.2, 0.9]]
-    y = [[0.1, 0.5]]
+    # x = [[1.2, 0.9]]
+    # y = [[0.1, 0.5]]
 
     my_print("input x", x, verbose)
     my_print("input y", y, verbose)
@@ -257,14 +260,37 @@ def test5(verbose=False):
     batch_number = len(x)  # Number of batch size
 
     test = ModelFactory(input_dimension, output_dimension, w_number_list, batch_number, 0.001)
-
-    for _ in range(10000):
+    for _ in range(5):
         test.train_one(x, y)
 
-    _1 = test.y_evaluated_function(x)
-    my_print("y (evaluated)", _1, verbose)
+    my_print("(Before)")
+    for i in range(test.layer_num):
+        my_print("W[%d]" % i, test.W[i].get_value())
+        my_print("W_Velocity[%d]" % i, test.W_velocity[i].get_value())
 
-    my_assert("Convergence of same input", y, _1)
+    for i in range(test.batch_num):
+        my_print("Grad on batch[%d]" % i, test.grad_function[i](x, y))
+
+    my_print("(After grad_function)")
+    for i in range(test.layer_num):
+        my_print("W[%d]" % i, test.W[i].get_value())
+        my_print("W_Velocity[%d]" % i, test.W_velocity[i].get_value())
+
+    for i in range(test.layer_num):
+        test.update_param_function[i](0)
+
+    my_print("(After update_param_function)")
+    for i in range(test.layer_num):
+        my_print("W[%d]" % i, test.W[i].get_value())
+        my_print("W_Velocity[%d]" % i, test.W_velocity[i].get_value())
+
+    for i in range(test.layer_num):
+        test.post_update_param_function[i](0)
+
+    my_print("(After post_update_param_function)")
+    for i in range(test.layer_num):
+        my_print("W[%d]" % i, test.W[i].get_value())
+        my_print("W_Velocity[%d]" % i, test.W_velocity[i].get_value())
 
     print("--------- End of Test 5 ---------")
 
@@ -275,6 +301,6 @@ def test5(verbose=False):
 '''
 # test1()
 # test2()
-test3(True)
-# test4(True)
-# test5()
+# test3()
+# test4()
+test5(True)
